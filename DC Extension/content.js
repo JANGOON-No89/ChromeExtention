@@ -136,7 +136,6 @@
 
 	chrome.runtime.onMessage.addListener(msg => {
 		if (msg.type === "START_DOWNLOAD") {
-			console.log("oo");
 			startDownloadLogic(msg);
 		}
 	});
@@ -163,7 +162,7 @@
 		let title = subject ? subject.textContent.trim() : document.title.trim() || "Unknown";
 
 		title = title.replace(/[/\\?%*:|"<>]/g, '_').substring(0, 100);
-		const folder = "[Dwn]" + title;
+		const folder = "[Download]" + title;
 
 		let completedCount = 0;
 		const total = urls.length;
@@ -183,4 +182,5 @@
 	
 	
 })();
+
 
