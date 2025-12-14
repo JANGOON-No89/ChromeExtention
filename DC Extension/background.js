@@ -15,7 +15,7 @@ async function fetchExt(url) {
 	} catch (e) {
 		console.warn("헤더 요청 실패", url, e);
 	}
-	return "jpg"; // 기본
+	return "jpg";
 }
 
 function openNext() {
@@ -90,4 +90,5 @@ chrome.commands.onCommand.addListener((msg) => {
 		});
 	}
 });
+
 
