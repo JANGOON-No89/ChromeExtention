@@ -2,31 +2,13 @@ let pendingQueue = [];
 let opening = false;
 const pendingTabs = new Map();
 
-async function fetchExt(url) {
-	try {
-		const resp = await fetch(url, { method: "HEAD" });
-		const cd = resp.headers.get("Content-Disposition");
-		if (cd) {
-			const match = cd.match(/filename.*\.(\w+)/);
-			if (match) return match[1];
-		}
-		const ct = resp.headers.get("Content-Type");
-		if (ct && ct.startsWith("image/")) return ct.split("/")[1];
-	} catch (e) {
-		console.warn("헤더 요청 실패", url, e);
-	}
-	return "jpg";
-}
-
 function openNext() {
 	if (opening || !pendingQueue.length) return;
 	opening = true;
 	const url = pendingQueue.shift();
 
 	chrome.tabs.create({ url, active: false }, tab => {
-		if (chrome.runtime.lastError) console.error("TAB CREATE ERROR:", chrome.runtime.lastError.message);
-		else pendingTabs.set(tab.id, true);
-		
+		if (!chrome.runtime.lastError) pendingTabs.set(tab.id, true);
 		setTimeout(() => {
 			opening = false;
 			openNext();
@@ -35,7 +17,6 @@ function openNext() {
 }
 
 chrome.runtime.onMessage.addListener(async (msg, sender) => {
-
 	if (msg.type === "OPEN_TAB") {
 		pendingQueue.push(msg.url);
 		openNext();
@@ -58,16 +39,13 @@ chrome.runtime.onMessage.addListener(async (msg, sender) => {
 	}
 
 	if (msg.type === "DOWNLOAD") {
-		const ext = await fetchExt(msg.url);
+		const ext = await getReliableExtension(msg.url);
 		const filename = `${msg.folder}/${msg.num}.${ext}`;
 		chrome.downloads.download({
 			url: msg.url,
 			filename,
 			conflictAction: "overwrite",
 			saveAs: false
-		}, id => {
-			if (chrome.runtime.lastError) console.error("[BG] DOWNLOAD ERROR", chrome.runtime.lastError.message);
-			else console.log("[BG] DOWNLOAD OK", id);
 		});
 		return true;
 	}
@@ -82,13 +60,63 @@ chrome.runtime.onMessage.addListener(async (msg, sender) => {
 	}
 });
 
-chrome.commands.onCommand.addListener((msg) => {
-	if (msg === "IMG_DOWNLOAD") {
-		chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-			const tabId =  tabs[0].id;
-			chrome.tabs.sendMessage(tabId, { type: "START_DOWNLOAD", isEach: true });
-		});
+const extensionMap = {
+	'image/jpeg': '.jpg',
+	'image/png': '.png',
+	'image/gif': '.gif',
+	'image/webp': '.webp',
+	'image/svg+xml': '.svg'
+};
+
+function getExtensionFromMime(mimeType) {
+	const cleanMime = mimeType ? mimeType.split(';')[0].toLowerCase() : '';
+	return extensionMap[cleanMime] || null;
+}
+
+function extractExtFromDisposition(contentDisposition) {
+	if (!contentDisposition) return null;
+	
+	const filenameMatch = contentDisposition.match(/filename\*?=["']?([^"';]+)["']?/i);
+	if (filenameMatch && filenameMatch[1]) {
+		const filenameFromHeader = decodeURIComponent(filenameMatch[1].trim());
+		const lastDotIndex = filenameFromHeader.lastIndexOf('.');
+		
+		if (lastDotIndex > -1) {
+			const ext = filenameFromHeader.substring(lastDotIndex).split('?')[0].toLowerCase();
+			if (ext.length > 1 && ext.length <= 5 && /^\.[a-z0-9]+$/i.test(ext)) {
+				return ext;
+			}
+		}
 	}
-});
+	return null;
+}
 
+async function getReliableExtension(url) {
+	const fallbackExtension = '.jpg';
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 5000);
+	
+	try {
+		const response = await fetch(url, { 
+			method: 'GET',
+			signal: controller.signal
+		});
+		clearTimeout(timeoutId);
 
+		if (response.ok) {
+			const contentDisposition = response.headers.get('content-disposition');
+			const contentType = response.headers.get('content-type');
+			let actualExtension = extractExtFromDisposition(contentDisposition);
+
+			if (!actualExtension && contentType) {
+				actualExtension = getExtensionFromMime(contentType);
+			}
+			
+			controller.abort();
+			if (actualExtension) return actualExtension;
+		}
+	} catch (e) {
+		clearTimeout(timeoutId);
+	}
+	return fallbackExtension;	
+}
