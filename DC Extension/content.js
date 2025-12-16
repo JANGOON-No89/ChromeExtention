@@ -1,43 +1,89 @@
-(() => {
-	const box = document.querySelector("div .appending_file_box");
-	const wrap = document.querySelector("div .view_content_wrap");
-	if (!box || !wrap) return;
+let imageUrls;
 
-	const firstChild = wrap.children[0];
+(() => {
+	const zone1 = document.querySelector("div .view_content_wrap");
+	const zone2 = document.querySelector("div .appending_file_box");
+	if (!zone1 || !zone2) return;
+
+	const firstChild = zone1.children[0];
 	if (!firstChild) return;
 	
 	const STORAGE_KEY = "ElementMove";
 	chrome.storage.sync.get(STORAGE_KEY, (data) => {
 		const isEnabled = data[STORAGE_KEY];
-		if (isEnabled) wrap.insertBefore(box, firstChild.nextSibling);
+		if (isEnabled) zone1.insertBefore(zone2, firstChild.nextSibling);
 	});
 
 	const a = document.querySelector("a.btn_file_dw");
 	if (!a) return;
-
-	const btn = createBtn("다운로드 후 종료", "Later_Exit");
-	a.nextElementSibling.after(btn);
 	
-	btn.onclick = () => {
-		a.click();
-		observeBtn(a);
-	};
+	let flag = 0;
+	const lisOrigin = document.querySelectorAll("ul.appending_file li")
+	const lisSorted = new Set(Array.from(lisOrigin).map(li => li.textContent)).size;
+	
+	if (lisOrigin.length === lisSorted) {
+		const urlLoading = "https://nstatic.dcinside.com/dc/m/img/gallview_loading_ori.gif";
+		const urlDCcon = "https://dcimg5.dcinside.com/dccon.php?no=";
+		imageUrls = Array.from(document.querySelectorAll(".write_div img"))
+			.map(img =>img.src == urlLoading ? img.dataset.original : img.src)
+			.filter(src => src && !src.startsWith(urlDCcon));
+		flag = lisSorted !== imageUrls.length ? 1 : 2;
+	}
+	
+	let box;
+	switch(flag) {
+		case 2:
+			box = createBtn("다운로드 후 종료", "Later_Exit");
+			box.onclick = () => {
+				a.click();
+				observeBtn(a);
+			};
+			break;
+		case 1:
+			box = createSign("첨부파일 수가 다름", false);
+			break;
+		case 0:
+			box = createSign("다운로드 불가", true);
+			break;
+	}
+	
+	a.nextElementSibling.after(box);
 	
 	function createBtn(text, cls) {
-		const btn = document.createElement("button");
-		btn.textContent = text;
-		btn.classList.add(cls);
-		btn.style.fontSize = "11px";
-		btn.style.color = "#ffffff";
-		btn.style.backgroundColor = "#66ccff";
-		btn.style.border = "1px solid #3399ff";
-		btn.style.borderRadius = "4px";
-		btn.style.padding = "0px 2px";
-		btn.style.marginLeft = "15px";
-		btn.style.cursor = "pointer";
-		btn.addEventListener("mouseover", () => btn.style.backgroundColor = "#5ab0e6");
-		btn.addEventListener("mouseout", () => btn.style.backgroundColor = "#66ccff");
-		return btn;
+		const box = document.createElement("button");
+		box.textContent = text;
+		box.classList.add(cls);
+		box.style.fontSize = "11px";
+		box.style.color = "#ffffff";
+		box.style.backgroundColor = "#66ccff";
+		box.style.border = "1px solid #3399ff";
+		box.style.borderRadius = "4px";
+		box.style.padding = "0px 2px";
+		box.style.marginLeft = "15px";
+		box.style.cursor = "pointer";
+		box.addEventListener("mouseover", () => box.style.backgroundColor = "#5ab0e6");
+		box.addEventListener("mouseout", () => box.style.backgroundColor = "#66ccff");
+		return box;
+	}
+	
+	function createSign(text, red) {
+		const box = document.createElement("div");
+		box.textContent = text;
+		box.style.fontSize = "11px";
+		box.style.color = "#ffffff";
+		box.style.borderRadius = "4px";
+		box.style.padding = "0px 2px";
+		box.style.marginLeft = "15px";
+		box.style.display = "inline-block";
+		box.style.cursor = "default";
+		if (red) {
+			box.style.backgroundColor = "#ff6666";
+			box.style.border = "1px solid #cc0000";
+		} else {
+			box.style.backgroundColor = "#ff9966";
+			box.style.border = "1px solid #ff6600";
+		}
+		return box;
 	}
 	
 	function observeBtn(btn) {
@@ -135,22 +181,9 @@
 	});
 	
 	function startDownloadLogic(options) {
-		const btnA = document.querySelector("a.btn_file_dw");
-		const btnB = document.querySelector(".Later_Exit");
-		const lis = document.querySelectorAll("ul.appending_file li");
-		const imgs = Array.from(document.querySelectorAll(".write_div img"));
-		
-		const urlLoading = "https://nstatic.dcinside.com/dc/m/img/gallview_loading_ori.gif";
-		const urlDCcon = "https://dcimg5.dcinside.com/dccon.php?no=";
-		
-		const imageUrls = imgs.map(img => img.src == urlLoading ? img.dataset.original : img.src)
-										.filter(src => src && !src.startsWith(urlDCcon));
-		
-		if (!options.isSelf && isEach) options.isEach = true;
-		
-		if (!options.isEach && btnA && lis.length === imgs.length) {
-			btnB.click();
-		} else downloadImages(imageUrls, options);
+		const btn = document.querySelector(".Later_Exit");
+		if (!isEach && !options.isEach && !options.isSelf && btn) btn.click();
+		else downloadImages(imageUrls, options);
 	}
 	
 	function downloadImages(urls, options) {
