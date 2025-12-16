@@ -1,8 +1,8 @@
 {
 	"manifest_version": 3,
-	"name": "DC Extension Release",
+	"name": "DCInside Image Downloader",
 	"version": "0.1",
-	"description": "DC 인사이드 확장 프로그램",
+	"description": "DC 인사이드 이미지 다운로더",
 	"permissions": [
 		"downloads",
 		"tabs",
