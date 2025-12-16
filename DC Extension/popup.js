@@ -11,8 +11,8 @@ let feedbackElement;
 
 function validateFilenamePattern(pattern) {
 	const WINDOWS_FORBIDDEN_CHARS_REGEX = /[<>:"/\\|*]/;
-	const KEYWORD_PATTERN_REGEX = /\?([a-zA-Z0-9]+)/g; 
-
+	const KEYWORD_PATTERN_REGEX = /\?([a-zA-Z0-9]+)/g;
+	
 	if (pattern.length > 50) {
 		return { isValid: false, message: `[Error] 파일명 규칙은 50자를 초과할 수 없습니다.` };
 	}
@@ -114,6 +114,5 @@ function loadAndInitializeAll() {
 		});
 	});
 }
-
 
 document.addEventListener('DOMContentLoaded', loadAndInitializeAll);
