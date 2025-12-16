@@ -1,13 +1,16 @@
 (() => {
 	const box = document.querySelector("div .appending_file_box");
 	const wrap = document.querySelector("div .view_content_wrap");
-
 	if (!box || !wrap) return;
 
 	const firstChild = wrap.children[0];
 	if (!firstChild) return;
-
-	wrap.insertBefore(box, firstChild.nextSibling);
+	
+	const STORAGE_KEY = "ElementMove";
+	chrome.storage.sync.get(STORAGE_KEY, (data) => {
+		const isEnabled = data[STORAGE_KEY];
+		if (isEnabled) wrap.insertBefore(box, firstChild.nextSibling);
+	});
 
 	const a = document.querySelector("a.btn_file_dw");
 	if (!a) return;
@@ -20,10 +23,10 @@
 		observeBtn(a);
 	};
 	
-	function createBtn(text, id) {
+	function createBtn(text, cls) {
 		const btn = document.createElement("button");
 		btn.textContent = text;
-		btn.classList.add(id);
+		btn.classList.add(cls);
 		btn.style.fontSize = "11px";
 		btn.style.color = "#ffffff";
 		btn.style.backgroundColor = "#66ccff";
@@ -53,23 +56,6 @@
 	const dcSeries = document.querySelector("div.dc_series");
 	if (!dcSeries) return;
 	
-	// 전체 다운로드 버튼 생성
-	const headerDiv = dcSeries.querySelector("div");
-	if (headerDiv) {
-		const allBtn = createBtn("전체 다운로드", true);
-		headerDiv.appendChild(allBtn);
-
-		allBtn.onclick = () => {
-			const links = Array.from(dcSeries.querySelectorAll("a[href]"));
-			links.forEach(a => {
-				chrome.runtime.sendMessage({ type: "OPEN_TAB", url: a.href });
-			});
-			chrome.runtime.sendMessage({ type: "SET_READY" });
-			chrome.runtime.sendMessage({ type: "CONTENT_READY", isSelf: true });
-		};
-	}
-	
-	// 개별 다운로드 버튼
 	const linkList = dcSeries.querySelectorAll("a[href]");
 	linkList.forEach(a => {
 		const btn = createBtn("다운로드");
@@ -82,22 +68,21 @@
 		};
 	});
 
-	function createBtn(text, isAll = false) {
+	function createBtn(text) {
 		const btn = document.createElement("button");
 		btn.textContent = text;
-		btn.style.fontSize = isAll ? "12px" : "11px"; // 2pt 차이(약 12~14px)
+		btn.style.fontSize = "11px";
 		btn.style.color = "#ffffff";
 		btn.style.backgroundColor = "#66ccff";
 		btn.style.border = "1px solid #3399ff";
 		btn.style.borderRadius = "4px";
-		btn.style.padding = isAll ? "1px 4px" : "0px 2px";
+		btn.style.padding = "0px 2px";
 		btn.style.marginBottom = "4px";
 		btn.style.cursor = "pointer";
 		btn.addEventListener("mouseover", () => btn.style.backgroundColor = "#5ab0e6");
 		btn.addEventListener("mouseout", () => btn.style.backgroundColor = "#66ccff");
 		return btn;
 	}
-
 })();
 
 (() => {
@@ -128,11 +113,20 @@
 		btn.addEventListener("mouseout", () => btn.style.backgroundColor = "#66ccff");
 		return btn;
 	}
-	
 })();
 
 (() => {
-	chrome.runtime.sendMessage({ type: "CONTENT_READY" });
+	let folderRule;
+	let isEach;
+	
+	chrome.storage.sync.get({ 
+		"IgnoreAttachment": false, 
+		"filenamePattern": "[download] " 
+	}, (data) => {
+		isEach = data.IgnoreAttachment;
+		folderRule = data.filenamePattern;
+		chrome.runtime.sendMessage({ type: "CONTENT_READY" });
+	});
 
 	chrome.runtime.onMessage.addListener(msg => {
 		if (msg.type === "START_DOWNLOAD") {
@@ -152,18 +146,34 @@
 		const imageUrls = imgs.map(img => img.src == urlLoading ? img.dataset.original : img.src)
 										.filter(src => src && !src.startsWith(urlDCcon));
 		
-		if (btnA && lis.length === imgs.length && !options.isEach) {
+		if (!options.isSelf && isEach) options.isEach = true;
+		
+		if (!options.isEach && btnA && lis.length === imgs.length) {
 			btnB.click();
 		} else downloadImages(imageUrls, options);
 	}
 	
 	function downloadImages(urls, options) {
-		const subject = document.querySelector(".title_subject");
-		let title = subject ? subject.textContent.trim() : document.title.trim() || "Unknown";
-
-		title = title.replace(/[/\\?%*:|"<>]/g, '_').substring(0, 100);
-		const folder = "[Download]" + title;
-
+		let folder = folderRule;
+		
+		if (folder.includes("?title")) {
+			const a = document.querySelector(".title_subject");
+			let b = a ? a.textContent.trim() : document.title.trim() || "Unknown";
+			b = b.replace(/[/\\?%*:|"<>]/g, '_').substring(0, 100);
+			folder = folder.replaceAll("?title", b); 
+		}
+		
+		if (folder.includes("?id")) {
+			const a = new URLSearchParams(window.location.search).get('no') || "0";
+			folder = folder.replaceAll("?id", a); 
+		}
+		
+		if (folder.includes("?gall")) {
+			const a = document.querySelector(".page_head h2 > a");
+			let b = a ? a.textContent.trim() : document.title.trim() || "UnknownGall";
+			folder = folder.replaceAll("?gall", b.replace(" 갤러리미니", "").replace(" 갤러리", "")); 
+		}
+		
 		let completedCount = 0;
 		const total = urls.length;
 
@@ -179,8 +189,5 @@
 			}
 		});
 	}
-	
-	
 })();
-
 
