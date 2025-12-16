@@ -1,6 +1,6 @@
 {
 	"manifest_version": 3,
-	"name": "DC Extension",
+	"name": "DC Extension Release",
 	"version": "0.1",
 	"description": "DC 인사이드 확장 프로그램",
 	"permissions": [
@@ -8,8 +8,7 @@
 		"tabs",
 		"scripting",
 		"webRequest",
-		"activeTab",
-		"commands"
+		"storage"
 	],
 	"host_permissions": [
 		"https://*.dcinside.com/*",
@@ -19,9 +18,7 @@
 		{
 			"matches": [
 				"https://gall.dcinside.com/board/view*",
-				"https://gall.dcinside.com/board/view/*",
-				"https://gall.dcinside.com/mini/board/view*",
-				"https://gall.dcinside.com/mini/board/view/*"
+				"https://gall.dcinside.com/mini/board/view*"
 			],
 			"js": ["content.js"]
 		}
@@ -29,12 +26,8 @@
 	"background": {
 		"service_worker": "background.js"
 	},
-	"commands": {
-		"IMG_DOWNLOAD": {
-			"suggested_key": {
-				"default": "Alt+S"
-			},
-			"description": "이미지 다운로드 시작"
-		}
+	"action": {
+		"default_popup": "popup.html",
+		"default_title": "옵션 설정"
 	}
 }
