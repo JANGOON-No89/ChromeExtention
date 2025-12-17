@@ -20,15 +20,14 @@ let imageUrls;
 	let flag = 0;
 	const lisOrigin = document.querySelectorAll("ul.appending_file li")
 	const lisSorted = new Set(Array.from(lisOrigin).map(li => li.textContent)).size;
+	const urlLoading = "https://nstatic.dcinside.com/dc/m/img/gallview_loading_ori.gif";
+	const urlDCcon = "https://dcimg5.dcinside.com/dccon.php?no=";
+	imageUrls = Array.from(document.querySelectorAll(".write_div img"))
+		.map(img =>img.src == urlLoading ? img.dataset.original : img.src)
+		.filter(src => src && !src.startsWith(urlDCcon));
+
+	if (lisOrigin.length === lisSorted) flag = lisSorted !== imageUrls.length ? 1 : 2;
 	
-	if (lisOrigin.length === lisSorted) {
-		const urlLoading = "https://nstatic.dcinside.com/dc/m/img/gallview_loading_ori.gif";
-		const urlDCcon = "https://dcimg5.dcinside.com/dccon.php?no=";
-		imageUrls = Array.from(document.querySelectorAll(".write_div img"))
-			.map(img =>img.src == urlLoading ? img.dataset.original : img.src)
-			.filter(src => src && !src.startsWith(urlDCcon));
-		flag = lisSorted !== imageUrls.length ? 1 : 2;
-	}
 	
 	let box;
 	switch(flag) {
@@ -223,4 +222,5 @@ let imageUrls;
 		});
 	}
 })();
+
 
