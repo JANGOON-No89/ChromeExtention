@@ -6,7 +6,6 @@
 	"permissions": [
 		"downloads",
 		"tabs",
-		"scripting",
 		"webRequest",
 		"storage"
 	],
@@ -31,3 +30,4 @@
 		"default_title": "옵션 설정"
 	}
 }
+
