@@ -5,8 +5,6 @@
 	"description": "DC 인사이드 이미지 다운로더",
 	"permissions": [
 		"downloads",
-		"tabs",
-		"webRequest",
 		"storage"
 	],
 	"host_permissions": [
@@ -30,4 +28,5 @@
 		"default_title": "옵션 설정"
 	}
 }
+
 
