@@ -14,9 +14,6 @@ let imageUrls;
 		if (isEnabled) zone1.insertBefore(zone2, firstChild.nextSibling);
 	});
 
-	const a = document.querySelector("a.btn_file_dw");
-	if (!a) return;
-	
 	let flag = 0;
 	const lisOrigin = document.querySelectorAll("ul.appending_file li")
 	const lisSorted = new Set(Array.from(lisOrigin).map(li => li.textContent)).size;
@@ -28,6 +25,8 @@ let imageUrls;
 
 	if (lisOrigin.length === lisSorted) flag = lisSorted !== imageUrls.length ? 1 : 2;
 	
+	const a = document.querySelector("a.btn_file_dw");
+	if (!a) return;
 	
 	let box;
 	switch(flag) {
@@ -222,5 +221,6 @@ let imageUrls;
 		});
 	}
 })();
+
 
 
